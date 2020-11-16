@@ -30,3 +30,10 @@
 *.exe
 *.out
 *.app
+
+# virtual environment
+venv/
+
+# IDE specific
+.idea/
+.vscode/
