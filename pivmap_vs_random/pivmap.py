@@ -5,6 +5,7 @@
 import numpy as np
 import random
 
+
 class PivotMapping:
     def __init__(self, path_to_dataset, embeddings=None):
         if embeddings is None:

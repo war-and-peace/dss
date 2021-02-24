@@ -37,3 +37,6 @@ venv/
 # IDE specific
 .idea/
 .vscode/
+
+# Project specific
+datasets/

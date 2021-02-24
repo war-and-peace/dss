@@ -9,7 +9,7 @@ from pivmap_vs_random.kmeans_part import KMeansPartitioner
 from pivmap_vs_random.pivmap import PivotMapping
 
 DATASET_PATH = '/home/abdurasul/Code/pai/facts-search/embeddings.txt'
-NUM_OF_PARTITIONS = 10
+NUM_OF_PARTITIONS = 4
 
 
 def load_embeddings(path_to_dataset):
@@ -35,7 +35,7 @@ def evaluate(partitions):
 
 
 def evaluate_partitioner(partitioner, name='unkonwn'):
-    print(f'Partitioning using {name} partitioner')
+    print(f'\n\nPartitioning using {name} partitioner')
     partitions = partitioner.partition(NUM_OF_PARTITIONS)
     print(f'Number of elements in first partition: {partitions[0].shape}')
     res, mean = evaluate(partitions)
