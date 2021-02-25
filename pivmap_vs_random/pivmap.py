@@ -17,22 +17,23 @@ class PivotMapping:
         self.vectors = []
 
     def load(self):
-        f = open(self.dataset_path, 'rb')
-        self.embeddings = np.load(f)
+        self.embeddings = np.load(self.dataset_path)
 
-    def calc_distances(self, p0, points):
+    @staticmethod
+    def calc_distances(p0, points):
         return np.sqrt(((p0 - points) ** 2).sum(axis=1))
 
-    def graipher(self, pts, K):
-        farthest_pts = np.zeros((K, pts.shape[1]))
+    def graipher(self, pts, big_k):
+        farthest_pts = np.zeros((big_k, pts.shape[1]))
         farthest_pts[0] = pts[np.random.randint(pts.shape[0])]
         distances = self.calc_distances(farthest_pts[0], pts)
-        for i in range(1, K):
+        for i in range(1, big_k):
             farthest_pts[i] = pts[np.argmax(distances)]
             distances = np.minimum(distances, self.calc_distances(farthest_pts[i], pts))
         return farthest_pts
 
-    def transform(self, vec, pivots):
+    @staticmethod
+    def transform(vec, pivots):
         return np.array([np.linalg.norm(vec - pivot) for pivot in pivots])
 
     def _partition(self, vectors, ids, n):
@@ -69,6 +70,6 @@ class PivotMapping:
         vecs, ids = self._partition(self.vectors.copy(), self.ids.copy(), n_partition)
         partitions = []
         for id_list in ids:
-            partitions.append(np.array([self.embeddings[id] for id in id_list]))
+            partitions.append(np.array([self.embeddings[idx] for idx in id_list]))
 
         return partitions

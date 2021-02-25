@@ -9,8 +9,11 @@ from indexes.utils.distance_function import get_distance_function
 from indexes.utils.dataset import Dataset
 from indexes.utils.config import Config
 
-from typing import List, Tuple
+from dataclasses import make_dataclass
+from typing import List, Tuple, Union
+from tabulate import tabulate
 from time import time
+import pandas as pd
 import random
 import tqdm
 
@@ -111,11 +114,16 @@ class SingleTester:
         recall = calc_recall(results[0], exact_results, queries)
         return recall, build_elapsed_time, query_time_total, data_dims, data_size
 
-    def report(self):
-        # TODO: Fix the output format
-        print(f'--------------------------------------------------------------------------------')
-        print(f'\t\tReport')
-        print(f'--------------------------------------------------------------------------------')
-        print(f'|  No  | Recall                           | Build time | Query time | Data dimensions | Dataset size |')
-        for report in self.reports:
-            print(report.summary())
+    def report(self, fmt: str = 'df') -> Union[pd.DataFrame, str]:
+        summary_entry = make_dataclass("Entry",
+                                       [('No', int), ('Recall', List[Tuple[int, float]]), ('Build_time', float),
+                                        ('Query_time', float), ('Data_dimensions', int), ('Dataset_size', int)])
+        df = pd.DataFrame([report.summary(summary_entry) for report in self.reports])
+        if fmt == 'str':
+            return tabulate(df, headers='keys', tablefmt='psql')
+        elif fmt == 'df':
+            return df
+        elif fmt == 'html':
+            return tabulate(df, headers='keys', tablefmt='html')
+        else:
+            raise ValueError(f"Format {fmt} is invalid. Supported formats: (str, df, html)")

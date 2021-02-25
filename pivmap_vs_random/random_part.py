@@ -13,8 +13,7 @@ class RandomPartitioner:
             self.embeddings = embeddings.copy()
 
     def load(self):
-        f = open(self.dataset_path, 'rb')
-        self.embeddings = np.load(f)
+        self.embeddings = np.load(self.dataset_path)
 
     def partition(self, n_partition=4):
         np.random.shuffle(self.embeddings)
