@@ -1,0 +1,8 @@
+{
+  "indexes": [
+    "hnsw_hnswlib"
+  ],
+  "datasets": [
+    {"sample": "/home/abdurasul/Code/Repos/dss/datasets/embeddings.txt"}
+  ]
+}
