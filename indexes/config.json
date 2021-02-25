@@ -1,8 +1,11 @@
 {
   "indexes": [
-    "hnsw_hnswlib"
+    "hnsw_hnswlib",
+    "RandomIndex",
+    "KMeansIndex"
   ],
   "datasets": [
-    {"sample": "/home/abdurasul/Code/Repos/dss/datasets/embeddings.txt"}
+    {"sample": "../datasets/embeddings.txt"},
+    {"Glove25-400": "../datasets/glove_embed.npy"}
   ]
 }

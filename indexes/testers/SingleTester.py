@@ -34,7 +34,7 @@ class SingleTester:
     """
 
     def __init__(self, config: Config, index_list: List[str] = None, dataset_list: List[str] = None,
-                 ready_indexes: List[Tuple[Index, Dataset]] = None):
+                 ready_indexes: List[Tuple[Index, Dataset]] = None, query_num: int = 10):
         """
         Initializes the SingleTester object
         :param config: Object that contains the configuration information (e.g.: path for index and datasets)
@@ -45,6 +45,7 @@ class SingleTester:
         """
 
         self.config = config
+        self.query_num = query_num
         self.indexes = index_list
         self.datasets = dataset_list
         self.ready_indexes = ready_indexes
@@ -74,7 +75,7 @@ class SingleTester:
                 recall, build_time, query_time, data_dims, data_size = self.perform_single_test(index, dataset)
                 self.reports[idx].set_all_stats(recall, build_time, query_time, data_dims, data_size)
 
-    def perform_single_test(self, index: Index, dataset: Dataset, queries: List[int] = None, query_num: int = 10):
+    def perform_single_test(self, index: Index, dataset: Dataset, queries: List[int] = None):
 
         # Load dataset
         data = dataset.load_dataset()
@@ -97,7 +98,7 @@ class SingleTester:
         # Query time and recall
         max_k = max(queries)
 
-        ids = random.sample(range(1, data_size), query_num)
+        ids = random.sample(range(1, data_size), self.query_num)
         qs = [data[query_id] for query_id in ids]
 
         query_start_time = time()
