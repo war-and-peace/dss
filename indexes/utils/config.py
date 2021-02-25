@@ -3,7 +3,7 @@
 # ------------------------------------------------------------------------------
 import json
 from indexes.utils.indexes import get_index
-from indexes.single_indexes.Index import Index
+from Index import Index
 from indexes.utils.dataset import Dataset
 
 

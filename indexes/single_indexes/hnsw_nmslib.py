@@ -3,16 +3,21 @@
 # ------------------------------------------------------------------------------
 
 
-class HnswNmslib:
-    def __init__(self, dimensions, metric='l2', distance_function=None):
-        self.dimensions = dimensions
-        self.metric = metric
-        self.distance_function = distance_function
+import Index as Index
+from overrides import overrides
 
-        # index = nmslib.Index(space=self.metric, dim=self.dimensions)
 
-    def build(self):
-        pass
+class HnswNmslib(Index.Index):
+    def __init__(self, name, max_elements, dimensions, metric='l2', distance_function=None, num_threads=-1):
+        super().__init__(name, max_elements, dimensions, metric, distance_function, num_threads)
+        self.index = hnswlib.Index(space=self.metric, dim=self.dimensions)
+        self.index.init_index(max_elements=self.max_elements, ef_construction=1000, M=64)
+        self.index.set_ef(1000)
 
-    def search(self, vector, k=5):
-        pass
+    @overrides
+    def build(self, dataset):
+        self.index.add_items(data=dataset, num_threads=self.num_threads)
+
+    @overrides
+    def search(self, query, k=5):
+        return self.index.knn_query(data=query, k=k, num_threads=self.num_threads)

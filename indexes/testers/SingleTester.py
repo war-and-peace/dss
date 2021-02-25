@@ -2,7 +2,7 @@
 #  Copyright (c) Abdurasul Rakhimov 24.2.2021.
 # ------------------------------------------------------------------------------
 
-from indexes.single_indexes.Index import Index
+from Index import Index
 from indexes.testers.Report import SingleIndexTestReport
 
 from indexes.utils.distance_function import get_distance_function
@@ -23,7 +23,7 @@ def calc_recall(approximate, exact, ks):
     for idx in range(len(exact)):
         for idk, k in enumerate(ks):
             exact_set = set(exact[idx][:k])
-            result[idk] += sum([x in exact_set for x in approximate[idx][:k]]) / k
+            result[idk] += sum([x[1] in exact_set for x in approximate[idx][:k]]) / k
     return [(ks[idx], elem / len(exact)) for idx, elem in enumerate(result)]
 
 
@@ -51,10 +51,12 @@ class SingleTester:
         self.default_queries = [5, 10, 20, 100]
 
         if self.ready_indexes is None:
-            self.reports = [SingleIndexTestReport(r_id=idx, index_id=idx, dataset_id=d_id) for d_id in
-                            range(len(self.datasets)) for idx in range(len(self.indexes))]
+            self.reports = [
+                SingleIndexTestReport(r_id=idx, index_name=self.indexes[idx], dataset_name=self.datasets[d_id]) for d_id
+                in range(len(self.datasets)) for idx in range(len(self.indexes))]
         else:
-            self.reports = [SingleIndexTestReport(r_id=idx, index_id=idx, dataset_id=idx) for idx in
+            self.reports = [SingleIndexTestReport(r_id=idx, index_name=self.ready_indexes[idx][0].name,
+                                                  dataset_name=self.ready_indexes[idx][1].name) for idx in
                             range(len(self.ready_indexes))]
 
     def test(self):
@@ -72,7 +74,7 @@ class SingleTester:
                 recall, build_time, query_time, data_dims, data_size = self.perform_single_test(index, dataset)
                 self.reports[idx].set_all_stats(recall, build_time, query_time, data_dims, data_size)
 
-    def perform_single_test(self, index: Index, dataset: Dataset, queries: List[int] = None, query_num: int = 1):
+    def perform_single_test(self, index: Index, dataset: Dataset, queries: List[int] = None, query_num: int = 10):
 
         # Load dataset
         data = dataset.load_dataset()
@@ -88,7 +90,7 @@ class SingleTester:
 
         # Measuring the build time
         build_start_time = time()
-        index.build(dataset.get_data())
+        index.build(dataset)
         build_finish_time = time()
         build_elapsed_time = build_finish_time - build_start_time
 
@@ -111,13 +113,14 @@ class SingleTester:
         else:
             exact_results = dataset.get_exact_query_results(qs, max_k, get_distance_function(index.metric))
 
-        recall = calc_recall(results[0], exact_results, queries)
+        recall = calc_recall(results, exact_results, queries)
         return recall, build_elapsed_time, query_time_total, data_dims, data_size
 
     def report(self, fmt: str = 'df') -> Union[pd.DataFrame, str]:
-        summary_entry = make_dataclass("Entry",
-                                       [('No', int), ('Recall', List[Tuple[int, float]]), ('Build_time', float),
-                                        ('Query_time', float), ('Data_dimensions', int), ('Dataset_size', int)])
+        summary_entry = make_dataclass("Entry", [('No', int), ('Index', str), ('Dataset', str),
+                                                 ('Recall', str), ('Build_time', float),
+                                                 ('Query_time', float), ('Data_dimensions', int),
+                                                 ('Dataset_size', int)])
         df = pd.DataFrame([report.summary(summary_entry) for report in self.reports])
         if fmt == 'str':
             return tabulate(df, headers='keys', tablefmt='psql')

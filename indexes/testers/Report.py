@@ -14,11 +14,16 @@ class Report:
         pass
 
 
+def process_recall(recall):
+    arr = [f"({pair[0]} - {pair[1]:.2f})" for pair in recall]
+    return ' '.join(arr)
+
+
 class SingleIndexTestReport(Report):
-    def __init__(self, r_id: int, index_id: int, dataset_id: int):
+    def __init__(self, r_id: int, index_name: str, dataset_name: str):
         super().__init__(r_id)
-        self.index_id = index_id
-        self.dataset_id = dataset_id
+        self.index_name = index_name
+        self.dataset_name = dataset_name
         self.recall = []
         self.build_time = 0
         self.query_time = 0
@@ -50,4 +55,5 @@ class SingleIndexTestReport(Report):
 
     @overrides
     def summary(self, summary_entry):
-        return summary_entry(self.r_id, self.recall, self.build_time, self.query_time, self.data_dims, self.data_size)
+        return summary_entry(self.r_id, self.index_name, self.dataset_name, process_recall(self.recall),
+                             self.build_time, self.query_time, self.data_dims, self.data_size)
