@@ -9,7 +9,7 @@ class Index:
         self.dimensions = dimensions
         self.metric = metric
         self.distance_function = distance_function
-        self.num_threads = -1
+        self.num_threads = num_threads
 
     def build(self, dataset):
         pass

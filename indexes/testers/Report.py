@@ -10,7 +10,7 @@ class Report:
     def __init__(self, r_id: int):
         self.r_id = r_id
 
-    def summary(self):
+    def summary(self, summary_entry):
         pass
 
 
@@ -49,5 +49,5 @@ class SingleIndexTestReport(Report):
         return self.recall, self.build_time, self.query_time, self.data_dims, self.data_size
 
     @overrides
-    def summary(self):
-        return f"| {self.r_id} | {self.recall}, | {self.build_time} | {self.query_time} | {self.data_dims} | {self.data_size} | "
+    def summary(self, summary_entry):
+        return summary_entry(self.r_id, self.recall, self.build_time, self.query_time, self.data_dims, self.data_size)

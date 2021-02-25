@@ -1,7 +1,6 @@
 # ------------------------------------------------------------------------------
 #  Copyright (c) Abdurasul Rakhimov 5.1.2021.
 # ------------------------------------------------------------------------------
-import nmslib
 
 
 class HnswNmslib:
@@ -10,7 +9,7 @@ class HnswNmslib:
         self.metric = metric
         self.distance_function = distance_function
 
-        index = nmslib.Index(space=self.metric, dim=self.dimensions)
+        # index = nmslib.Index(space=self.metric, dim=self.dimensions)
 
     def build(self):
         pass
