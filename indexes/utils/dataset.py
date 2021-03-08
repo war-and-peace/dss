@@ -57,7 +57,7 @@ class Dataset:
         results = [[(distance_function(self.data[idx], queries[q_id]), idx) for idx in range(self.data.shape[0])] for
                    q_id in range(len(queries))]
 
-        return [[elem[1] for elem in list(sorted(res))[:k]] for res in results]
+        return [[elem for elem in list(sorted(res))[:k]] for res in results]
 
 
 class BasicDataset(Dataset):

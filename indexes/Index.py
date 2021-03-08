@@ -2,7 +2,7 @@
 #  Copyright (c) Abdurasul Rakhimov 25.2.2021.
 # ------------------------------------------------------------------------------
 from typing import List, Tuple
-
+from indexes.testers.TimeStats import TimeStats
 
 class Index:
     def __init__(self, name: str, max_elements: int, dimensions: int, metric: str = 'l2', distance_function=None,
@@ -18,7 +18,7 @@ class Index:
     def build(self, dataset):
         pass
 
-    def search(self, query, k=5) -> List[List[Tuple[float, int]]]:
+    def search(self, query, k=5):
         pass
 
     def empty(self):

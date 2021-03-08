@@ -6,6 +6,7 @@
   ],
   "datasets": [
     {"sample": "../datasets/embeddings.txt"},
-    {"Glove25-400": "../datasets/glove_embed.npy"}
+    {"Glove25-400": "../datasets/glove_embed.npy"},
+    {"sample25-1m":  "../datasets/sample25-1m.npy"}
   ]
 }

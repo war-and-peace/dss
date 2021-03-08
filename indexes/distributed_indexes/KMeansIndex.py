@@ -3,32 +3,37 @@
 # ------------------------------------------------------------------------------
 
 from indexes.single_indexes.hnsw_hnswlib import HnswHnswlib
+from indexes.testers.TimeStats import BuildTimeStats, QueryTimeStats
 from indexes.utils.dataset import BasicDataset
+from indexes.utils.distance_function import l2distance
 import Index
 
 from sklearn.cluster import KMeans
 from overrides import overrides
 from typing import List, Tuple
-import numpy as np
-import random
+
+from time import time
 
 
 class KMeansIndex(Index.Index):
     def __init__(self, name, max_elements, dimensions, metric='l2', distance_function=None, num_threads=-1,
-                 num_partitions=4, ef_construction=1000, ef=1000, m=64):
+                 num_partitions=4, num_partitions_to_search=2, ef_construction=1000, ef=1000, m=64):
         super().__init__(name, max_elements, dimensions, metric, distance_function, num_threads)
         self.num_partitions = num_partitions
+        self.num_partitions_to_search = num_partitions_to_search
         self.ef_construction = ef_construction
         self.ef = ef
         self.m = m
         self.single_partitions_size = 0
         self.mapping = None
+        self.centers = None
 
     def partition(self, dataset):
         data = dataset.get_data()
         k_means = KMeans(n_clusters=self.num_partitions, random_state=0)
         k_means.fit(data)
         labels = k_means.labels_
+        self.centers = k_means.cluster_centers_
         self.mapping = dict([(i, []) for i in range(self.num_partitions)])
         p_indexes = [[] for _ in range(self.num_partitions)]
         for i in range(labels.shape[0]):
@@ -37,30 +42,15 @@ class KMeansIndex(Index.Index):
 
         partitions = [data[p_indexes[idx]] for idx in range(self.num_partitions)]
 
-        # indexes = list(range(dataset.get_size()))
-        # random.shuffle(indexes)
-        # self.mapping = [elem for elem in indexes]
-        # data = dataset.get_data()
-        #
-        # single_partition_size = (dataset.get_size() + self.num_partitions - 1) // self.num_partitions
-        # partitions = []
-
-        # start, end, finish = 0, min(single_partition_size, dataset.get_size()), dataset.get_size()
-        # while start < finish:
-        #     partitions.append(data[indexes[start:end]])
-        #     start += single_partition_size
-        #     end = min(end + single_partition_size, dataset.get_size())
-
-        # print(f'{self.num_partitions} - {len(partitions)}')
-        # assert (self.num_partitions == len(partitions),
-        #         f"Error while creating partitions. Could not create {self.num_partitions} partitions")
-
-        # self.single_partitions_size = single_partition_size
         return partitions
 
     @overrides
-    def build(self, dataset):
+    def build(self, dataset) -> BuildTimeStats:
+        partition_start_time = time()
         partitions = self.partition(dataset)
+        elapsed_partition_time = time() - partition_start_time
+
+        build_start_time = time()
         datasets = [BasicDataset(f'partition{idx}', '') for idx in range(self.num_partitions)]
         for idx, dataset in enumerate(datasets):
             dataset.load_dataset_from_numpy(partitions[idx])
@@ -69,16 +59,27 @@ class KMeansIndex(Index.Index):
                       idx in range(self.num_partitions)]
         for idx, index in enumerate(self.index):
             index.build(datasets[idx])
+        elapsed_build_time = time() - build_start_time
+        return BuildTimeStats(elapsed_partition_time, elapsed_build_time)
 
     @overrides
-    def search(self, query, k=5) -> List[List[Tuple[float, int]]]:
-        results = [index.search(query, k) for index in self.index]
+    def search(self, query, k=5) -> Tuple[List[List[Tuple[float, int]]], QueryTimeStats, float]:
+        avg_ind = self.num_partitions_to_search
+        query_start_time = time()
+        index_list = [
+            list(sorted([(l2distance(q, self.centers[i]), i) for i in range(len(self.index))], key=lambda x: x[0]))[
+            :self.num_partitions_to_search] for q in query]
+        results = [[self.index[idx].search([query[q_id]], k)[0] for _, idx in id_list] for q_id, id_list in
+                   enumerate(index_list)]
+        elapsed_query_time = time() - query_start_time
 
+        merge_start_time = time()
         # Fix indexes
-        results = [
-            [[(dist, self.mapping[idx][ids]) for dist, ids in t] for t in res] for
-            idx, res in enumerate(results)]
 
-        results_pair = [[result[res_id] for result in results] for res_id in range(len(query))]
+        results = [[[(t[0], self.mapping[index_list[q_id][ind_id][1]][t[1]]) for t in index[0]] for ind_id, index in enumerate(res)]
+                   for q_id, res in enumerate(results)]
 
-        return [list(sorted([elem for pair in rp for elem in pair], key=lambda x: x[0]))[:k] for rp in results_pair]
+        result = [list(sorted([t for index in res for t in index], key=lambda x: x[0]))[:k] for res in results]
+
+        elapsed_merge_time = time() - merge_start_time
+        return result, QueryTimeStats(elapsed_query_time, elapsed_merge_time, len(query)), avg_ind

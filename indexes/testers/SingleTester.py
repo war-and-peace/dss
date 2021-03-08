@@ -67,13 +67,13 @@ class SingleTester:
                     dataset = Dataset(name=dataset_name, dataset_path=self.config.get_dataset_path(dataset_name))
                     dataset.load_dataset()
                     index = self.config.get_index(index_name, dataset)
-                    recall, build_time, query_time, data_dims, data_size = self.perform_single_test(index, dataset)
+                    recall, build_time, query_time, avg_ind, data_dims, data_size = self.perform_single_test(index, dataset)
                     self.reports[index_id * len(self.indexes) + d_id].set_all_stats(recall, build_time, query_time,
                                                                                     data_dims, data_size)
         else:
             for idx, (index, dataset) in tqdm.tqdm(enumerate(self.ready_indexes)):
-                recall, build_time, query_time, data_dims, data_size = self.perform_single_test(index, dataset)
-                self.reports[idx].set_all_stats(recall, build_time, query_time, data_dims, data_size)
+                recall, build_time, query_time, avg_ind, data_dims, data_size = self.perform_single_test(index, dataset)
+                self.reports[idx].set_all_stats(recall, build_time, query_time, avg_ind, data_dims, data_size)
 
     def perform_single_test(self, index: Index, dataset: Dataset, queries: List[int] = None):
 
@@ -89,11 +89,7 @@ class SingleTester:
         # Size of dataset
         data_size = dataset.get_size()
 
-        # Measuring the build time
-        build_start_time = time()
-        index.build(dataset)
-        build_finish_time = time()
-        build_elapsed_time = build_finish_time - build_start_time
+        build_stats = index.build(dataset)
 
         # Query time and recall
         max_k = max(queries)
@@ -101,11 +97,7 @@ class SingleTester:
         ids = random.sample(range(1, data_size), self.query_num)
         qs = [data[query_id] for query_id in ids]
 
-        query_start_time = time()
-        results = index.search(query=qs, k=max_k)
-        query_finish_time = time()
-
-        query_time_total = (query_finish_time - query_start_time) / len(qs)
+        results, query_stats, avg_ind = index.search(query=qs, k=max_k)
 
         # Get exact query results
 
@@ -113,16 +105,22 @@ class SingleTester:
             exact_results = dataset.get_exact_query_results(qs, max_k, index.distance_function)
         else:
             exact_results = dataset.get_exact_query_results(qs, max_k, get_distance_function(index.metric))
+        er_indexes = [[elem[1] for elem in res] for res in exact_results]
+        # print(exact_results)
+        # print(results)
+        recall = calc_recall(results, er_indexes, queries)
+        return recall, build_stats, query_stats, avg_ind, data_dims, data_size
 
-        recall = calc_recall(results, exact_results, queries)
-        return recall, build_elapsed_time, query_time_total, data_dims, data_size
-
-    def report(self, fmt: str = 'df') -> Union[pd.DataFrame, str]:
-        summary_entry = make_dataclass("Entry", [('No', int), ('Index', str), ('Dataset', str),
-                                                 ('Recall', str), ('Build_time', float),
-                                                 ('Query_time', float), ('Data_dimensions', int),
-                                                 ('Dataset_size', int)])
+    def report(self, fmt: str = 'df', save_path: str = None) -> Union[pd.DataFrame, str]:
+        summary_entry = make_dataclass("Entry", [('No', int), ('Index', str), ('Dataset', str), ('Recall', str),
+                                                 ('Partition', float), ('Build', float),
+                                                 ('Query', float), ('Merge', float), ('avg_ind', float),
+                                                 ('dims', int), ('N', int)])
         df = pd.DataFrame([report.summary(summary_entry) for report in self.reports])
+        if save_path:
+            with open(save_path, 'w') as fd:
+                fd.write(tabulate(df, headers='keys', tablefmt='html'))
+
         if fmt == 'str':
             return tabulate(df, headers='keys', tablefmt='psql')
         elif fmt == 'df':
