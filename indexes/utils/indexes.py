@@ -2,7 +2,7 @@
 #  Copyright (c) Abdurasul Rakhimov 24.2.2021.
 # ------------------------------------------------------------------------------
 
-from indexes.single_indexes.Index import Index
+from Index import Index
 from indexes.single_indexes import hnsw_hnswlib
 from indexes.utils.dataset import Dataset
 from typing import Union
